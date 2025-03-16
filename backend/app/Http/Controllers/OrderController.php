@@ -25,9 +25,9 @@ class OrderController extends Controller {
     }
     public function updateStatus($id) {
         $order = Order::findOrFail($id);
-        $order->status = 'Выполнен';
+        $order->status = 'Completed';
         $order->save();
-        return response()->json(['message' => 'Успешно']);
+        return response()->json(['message' => 'Success']);
     }
 
 }

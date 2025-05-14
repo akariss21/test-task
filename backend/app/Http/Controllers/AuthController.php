@@ -13,6 +13,7 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6',
             'gender' => 'required|in:male,female'
@@ -22,13 +23,27 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $user = User::create([
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'gender' => $request->gender,
-        ]);
+        try {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'gender' => $request->gender
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error creating user', 'message' => $e->getMessage()], 500);
+        }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = null;
+        try {
+            $token = $user->createToken('auth_token')->plainTextToken;
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error creating token',
+                'message' => $e->getMessage(),
+                'stack' => $e->getTraceAsString()
+            ], 500);
+        }
 
         return response()->json([
             'message' => 'User registered successfully',
@@ -36,6 +51,7 @@ class AuthController extends Controller
             'token' => $token
         ], 201);
     }
+
 
     public function login(Request $request)
     {
@@ -53,12 +69,10 @@ class AuthController extends Controller
         }
 
         $user = Auth::user();
-        $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
             'message' => 'Login successful',
-            'user' => $user,
-            'token' => $token
+            'user' => $user
         ]);
     }
 

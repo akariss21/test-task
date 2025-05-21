@@ -23,7 +23,7 @@ class ProductController extends Controller {
         return response()->json($product);
     }
     public function list(Product $product) {
-        return response()->json($product->only(['id', 'name', 'price', 'category_id']));
+        return response()->json($product->only(['id', 'name', 'price', 'category_id', 'description']));
     }
     public function destroy(Product $product) {
         $product->delete();

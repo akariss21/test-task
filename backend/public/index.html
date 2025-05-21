@@ -70,12 +70,8 @@
       });
     }
 
-    let globalProducts = [];
-
     async function loadProducts() {
       const products = await fetchJSON(`${apiBase}/products`);
-      globalProducts = products;
-
       const list = document.getElementById('product-list');
       const orderSelect = document.getElementById('order-product');
 
@@ -87,7 +83,8 @@
         li.innerHTML = `
           <strong>${p.name}</strong> — ${p.price}₽<br>
           Категория: ${p.category?.name || '—'}<br>
-          <button data-id="${p.id}" class="delete-btn">Удалить</button>
+          <button data-id="${p.id}" class="view-product">Посмотреть полную информацию</button>
+          <button data-id="${p.id}" class="delete-product">Удалить</button>
         `;
         list.appendChild(li);
 
@@ -97,12 +94,25 @@
         orderSelect.appendChild(opt);
       });
 
-      document.querySelectorAll('.delete-btn').forEach(btn => {
+      document.querySelectorAll('.delete-product').forEach(btn => {
         btn.onclick = async () => {
           if (confirm('Удалить товар?')) {
             await fetch(`${apiBase}/products/${btn.dataset.id}`, { method: 'DELETE' });
             loadProducts();
           }
+        };
+      });
+
+      document.querySelectorAll('.view-product').forEach(btn => {
+        categories = ['Light', 'Fragile', 'Heavy']
+        btn.onclick = async () => {
+          const data = await fetchJSON(`${apiBase}/products/${btn.dataset.id}`);
+          alert(`
+Название: ${data.name}
+Категория: ${categories[data.category_id-1]}
+Описание: ${data.description}
+Цена: ${data.price} ₽
+          `);
         };
       });
     }
@@ -176,15 +186,31 @@
           Товар: ${order.product?.name || '—'} × ${order.quantity}<br>
           Итоговая цена: ${order.total_price} ₽<br>
           Статус: ${order.status}<br>
-          ${order.status === 'new' ? `<button data-id="${order.id}" class="complete-btn">Завершить</button>` : ''}
+          <button data-id="${order.id}" class="view-order">Посмотреть полную информацию</button>
+          ${order.status === 'new' ? `<button data-id="${order.id}" class="complete-order">Завершить</button>` : ''}
         `;
         list.appendChild(li);
       });
 
-      document.querySelectorAll('.complete-btn').forEach(btn => {
+      document.querySelectorAll('.complete-order').forEach(btn => {
         btn.onclick = async () => {
           await fetch(`${apiBase}/orders/${btn.dataset.id}/complete`, { method: 'PATCH' });
           loadOrders();
+        };
+      });
+
+      document.querySelectorAll('.view-order').forEach(btn => {
+        btn.onclick = async () => {
+          const order = await fetchJSON(`${apiBase}/orders/${btn.dataset.id}`);
+          alert(`
+Заказ #${order.id}
+Покупатель: ${order.customer_name}
+Дата: ${order.order_date}
+Товар: ${order.product?.name || '—'}
+Количество: ${order.quantity}
+Комментарий: ${order.comment || '—'}
+Статус: ${order.status}
+          `);
         };
       });
     }

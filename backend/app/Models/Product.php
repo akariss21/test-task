@@ -22,4 +22,12 @@ class Product extends Model {
     public function getDescription(){
         return $this->getAttribute('description');
     }
+    public function seller()
+    {
+        return $this->belongsTo(User::class, 'seller_id');
+    }
+    public function getSellerProfitAttribute(): float
+    {
+        return $this->price * 0.90; // 90% от цены
+    }
 }

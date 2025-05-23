@@ -19,7 +19,7 @@ class JwtMiddleware
             return response()->json(['message' => 'Token not provided'], 401);
         }
 
-        $secret =(string) env('JWT_SECRET');
+        $secret = (string) env('JWT_SECRET');
 
         if (empty($secret)) {
             return response()->json(['message' => 'JWT secret is empty'], 500);

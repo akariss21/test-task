@@ -9,26 +9,51 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use Illuminate\Support\Facades\Log;
+use Exception;
 
 class AuthController extends Controller
 {
     private function generateJWT($user)
     {
+        $secret = config('app.jwt_secret');
+        
+        if (!is_string($secret) || empty($secret)) {
+            Log::error('Invalid JWT secret configuration');
+            throw new RuntimeException('JWT secret is not properly configured');
+        }
+
+        if (strlen($secret) < 32) {
+            Log::error('JWT secret is too short');
+            throw new RuntimeException('JWT secret must be at least 32 characters');
+        }
+
         $payload = [
-            'iss' => 'laravel-jwt',          // Issuer
-            'sub' => $user->id,              // Subject (user ID)
-            'iat' => time(),                 // Issued at
-            'exp' => time() + 60 * 60        // Expiration time (1 hour)
+            'iss' => config('app.url'),
+            'sub' => $user->id,
+            'iat' => now()->timestamp,
+            'exp' => now()->addHours(1)->timestamp,
+            'jti' => bin2hex(random_bytes(16)),
+            'role' => $user->role
         ];
 
-        return JWT::encode($payload, env('JWT_SECRET'), 'HS256');
+        return JWT::encode($payload, $secret, 'HS256');
     }
 
     private function decodeJWT($token)
     {
+        $secret = config('app.jwt_secret');
+
         try {
-            return JWT::decode($token, new Key(env('JWT_SECRET'), 'HS256'));
-        } catch (\Exception $e) {
+            $decoded = JWT::decode($token, new Key($secret, 'HS256'));
+
+            if (empty($decoded->sub)) {
+                throw new Exception('Invalid token payload');
+            }
+
+            return $decoded;
+        } catch (Exception $e) {
+            Log::error('JWT decoding failed: ' . $e->getMessage());
             return null;
         }
     }

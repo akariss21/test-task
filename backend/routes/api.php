@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
@@ -23,7 +24,5 @@ Route::patch('orders/{id}/complete', [OrderController::class, 'updateStatus']);
 Route::post('/registration', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/profile', [AuthController::class, 'profile']);
-    Route::post('/logout', [AuthController::class, 'logout']);
-});
+Route::middleware(\App\Http\Middleware\JwtMiddleware::class)->get('/profile', [AuthController::class, 'profile']);
+Route::middleware(\App\Http\Middleware\JwtMiddleware::class)->get('/logout', [AuthController::class, 'logout']);

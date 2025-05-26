@@ -12,6 +12,27 @@ use Tymon\JWTAuth\Exceptions\JWTException;
 
 class AuthController extends Controller
 {
+    private function generateJWT($user)
+    {
+        $payload = [
+            'iss' => 'laravel-jwt',          // Issuer
+            'sub' => $user->id,              // Subject (user ID)
+            'iat' => time(),                 // Issued at
+            'exp' => time() + 60 * 60        // Expiration time (1 hour)
+        ];
+
+        return JWT::encode($payload, env('JWT_SECRET'), 'HS256');
+    }
+
+    private function decodeJWT($token)
+    {
+        try {
+            return JWT::decode($token, new Key(env('JWT_SECRET'), 'HS256'));
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -31,7 +52,6 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'gender' => $request->gender
         ]);
-
         $token = JWTAuth::fromUser($user);
 
         return response()->json([
@@ -44,7 +64,6 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->only('email', 'password');
-
         try {
             if (!$token = JWTAuth::attempt($credentials)) {
                 return response()->json(['error' => 'Invalid credentials'], 401);
@@ -63,9 +82,28 @@ class AuthController extends Controller
 
     public function profile(Request $request)
     {
+        $authHeader = $request->header('Authorization');
+
+        if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
+            return response()->json(['message' => 'Token not provided'], 401);
+        }
+
+        $token = substr($authHeader, 7);
+        $decoded = $this->decodeJWT($token);
+
+        if (!$decoded) {
+            return response()->json(['message' => 'Invalid or expired token'], 401);
+        }
+
+        $user = User::find($decoded->sub);
+
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
         return response()->json([
             'success' => true,
-            'user' => $request->user()
+            'user' => $user
         ]);
     }
 

@@ -1,5 +1,5 @@
 Launch steps:
-1. git clone this project
+1. git clone https://github.com/akariss21/zero-project.git
 2. cp ./backend/.env.example ./backend/.env
 3. docker-compose build(or docker compose)
 4. docker-compose up -d

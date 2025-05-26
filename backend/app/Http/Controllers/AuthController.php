@@ -7,8 +7,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use Tymon\JWTAuth\Exceptions\JWTException;
 
 class AuthController extends Controller
 {
@@ -52,8 +52,7 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'gender' => $request->gender
         ]);
-
-        $token = $this->generateJWT($user);
+        $token = JWTAuth::fromUser($user);
 
         return response()->json([
             'message' => 'User registered successfully',
@@ -64,29 +63,22 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+        $credentials = $request->only('email', 'password');
+        try {
+            if (!$token = JWTAuth::attempt($credentials)) {
+                return response()->json(['error' => 'Invalid credentials'], 401);
+            }
+        } catch (JWTException $e) {
+            return response()->json(['error' => 'Could not create token'], 500);
         }
-
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
-        }
-
-        $token = $this->generateJWT($user);
 
         return response()->json([
             'message' => 'Login successful',
-            'user' => $user,
-            'token' => $token
+            'token' => $token,
+            'user' => auth()->user()
         ]);
     }
+
 
     public function profile(Request $request)
     {
@@ -117,8 +109,11 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        // JWT нельзя "удалить" — он будет действителен до истечения срока.
-        // В продакшене можно использовать черный список (blacklist).
-        return response()->json(['message' => 'Logout endpoint hit — JWT can’t be revoked on server without blacklist'], 200);
+        try {
+            JWTAuth::invalidate(JWTAuth::getToken());
+            return response()->json(['message' => 'Logged out successfully']);
+        } catch (JWTException $e) {
+            return response()->json(['error' => 'Failed to logout, please try again.'], 500);
+        }
     }
 }

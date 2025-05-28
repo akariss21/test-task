@@ -16,7 +16,9 @@ return new class extends Migration
             $table->string('name');
             $table->foreignId('category_id')->constrained('categories');
             $table->text('description')->nullable();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->decimal('price', 10, 2);
+            $table->unsignedInteger('quantity')->default(0);
             $table->timestamps();
         });
     }
@@ -27,5 +29,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('products');
+        Schema::table('products', function (Blueprint $table) {
+            $table->dropForeign(['user_id']);
+            $table->dropColumn('user_id');
+        });
     }
 };

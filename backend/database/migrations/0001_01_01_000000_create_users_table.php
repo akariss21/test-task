@@ -18,6 +18,9 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->enum('gender', ['male', 'female']);
+            $table->decimal('balance', 10, 2)->default(0);
+            $table->enum('role', ['customer', 'seller'])->default('customer');
+            $table->decimal('profit')->default(0.9);
             $table->rememberToken();
             $table->timestamps();
         });
@@ -44,6 +47,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('users');
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('balance');
+        });
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
     }

@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\BecomeSellerRequest;
+use App\Http\Resources\RoleResource;
 use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
-    public function becomeSeller()
+    public function becomeSeller(BecomeSellerRequest $request)
     {
-        $user = Auth::user();
+        $user = $request->user();
 
         if ($user->role === 'seller') {
             return response()->json(['message' => 'Вы уже продавец']);
@@ -23,6 +24,6 @@ class UserController extends Controller
 
     public function role()
     {
-        return response()->json(['role' => Auth::user()->role]);
+        return new RoleResource(auth()->user());
     }
 }

@@ -2,36 +2,39 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Transaction;
+use App\Http\Requests\TransactionDepositRequest;
+use App\Http\Requests\TransactionWithdrawRequest;
+use App\Http\Requests\TransactionPurchaseRequest;
 use App\Models\Order;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
-use Exception;
 
 class TransactionController extends Controller
 {
-    public function deposit(Request $request)
+    public function deposit(TransactionDepositRequest $request)
     {
         $user = auth()->user();
-        $amount = $request['amount'];
+        $amount = $request->amount;
 
         $user->balance += $amount;
         $user->save();
 
         Transaction::create([
             'user_id' => $user->id,
-            'type' => 'deposit',
-            'amount' => $amount,
+            'type'    => 'deposit',
+            'amount'  => $amount,
         ]);
 
-        return response()->json(['message' => 'Баланс пополнен на ' . $amount, 'balance' => $user->balance]);
+        return response()->json([
+            'message' => 'Баланс пополнен на ' . $amount,
+            'balance' => $user->balance
+        ]);
     }
 
-    public function withdraw(Request $request)
+    public function withdraw(TransactionWithdrawRequest $request)
     {
         $user = auth()->user();
-        $amount =  $request['amount'];
+        $amount = $request->amount;
 
         if ($user->balance < $amount) {
             return response()->json(['message' => 'Недостаточно средств'], 400);
@@ -42,66 +45,80 @@ class TransactionController extends Controller
 
         Transaction::create([
             'user_id' => $user->id,
-            'type' => 'withdrawal',
-            'amount' => -$amount,
+            'type'    => 'withdrawal',
+            'amount'  => -$amount,
         ]);
 
-        return response()->json(['message' => 'Вывод произведен', 'balance' => $user->balance]);
+        return response()->json([
+            'message' => 'Вывод произведен',
+            'balance' => $user->balance
+        ]);
     }
 
-    public function purchase(Request $request)
+    public function purchase(TransactionPurchaseRequest $request)
     {
         $user = auth()->user();
-        $orderId = $request['order_id'];
-        $order = Order::with('product.user')->findOrFail($orderId);
+        $order = Order::with('products.user')->findOrFail($request->order_id);
 
-        $product = $order->product;
-        $quantity = $order->quantity;
-        $amount = $product->price * $quantity;
+        if ($order->isCompleted()) {
+            return response()->json(['message' => 'Заказ уже завершен'], 400);
+        }
+        
+        $totalAmount = 0;
+        foreach ($order->products as $product) {
+            $totalAmount += $product->price * $product->pivot->quantity;
+        }
 
-        if ($user->balance < $amount) {
+        if ($user->balance < $totalAmount) {
             return response()->json(['message' => 'Недостаточно средств'], 400);
         }
 
-        DB::transaction(function () use ($order, $product, $user, $quantity, $amount) {
-            if ($product->quantity < $quantity) {
-                throw new \Exception("Недостаточно товара {$product->name}");
+        DB::transaction(function () use ($order, $user, $totalAmount) {
+            foreach ($order->products as $product) {
+                $quantity = $product->pivot->quantity;
+
+                if ($product->quantity < $quantity) {
+                    throw new \Exception("Недостаточно товара {$product->name}");
+                }
+
+                $product->quantity -= $quantity;
+                $product->save();
+
+                $seller = $product->user;
+                $sellerIncome = $product->price * $quantity * 0.9;
+                $seller->balance += $sellerIncome;
+                $seller->save();
+
+                Transaction::create([
+                    'user_id'   => $user->id,
+                    'type'      => 'purchase',
+                    'amount'    => -$product->price * $quantity,
+                    'order_id'  => $order->id,
+                    'seller_id' => $seller->id,
+                    'meta'      => json_encode([
+                        'product_id' => $product->id,
+                        'quantity'   => $quantity,
+                        'price'      => $product->price,
+                    ]),
+                ]);
             }
 
-            // Обновляем остаток товара
-            $product->quantity -= $quantity;
-            \Log::info('Обновление продукта', ['quantity' => $product->quantity]);
-            $product->save();
-
-            // Обновляем покупателя
-            $user->balance -= $amount;
-            \Log::info('Обновление пользователя', ['balance' => $user->balance]);
+            $user->balance -= $totalAmount;
             $user->save();
 
-            // Обновляем продавца
-            $seller = $product->user;
-            $seller->balance += $amount * 0.9;
-            \Log::info('Обновление продавца', ['balance' => $seller->balance]);
-            $seller->save();
-
-            // Завершаем заказ
             $order->status = 'completed';
             $order->save();
-
-            // Создаём транзакцию
-            Transaction::create([
-                'user_id' => $user->id,
-                'type' => 'purchase',
-                'amount' => -$amount,
-                'order_id' => $order->id,
-                'seller_id' => $seller->id,
-                'meta' => json_encode([
-                    'product_id' => $product->id,
-                    'quantity' => $quantity
-                ]),
-            ]);
         });
 
-        return response()->json(['message' => 'Покупка совершена', 'balance' => $user->balance]);
+        return response()->json([
+            'message'        => 'Покупка успешно завершена',
+            'buyer_balance'  => $user->balance,
+            'sellers'        => $order->products->map(fn($p) => [
+                'seller_id'     => $p->user->id,
+                'seller_balance'=> $p->user->balance,
+                'product_id'    => $p->id,
+            ]),
+            'total_price'    => $totalAmount,
+        ]);
     }
 }

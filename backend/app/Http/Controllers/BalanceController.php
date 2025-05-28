@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-
+use App\Http\Requests\BalanceRequest;
+use App\Http\Resources\BalanceResource;
 
 class BalanceController extends Controller
 {
-    public function show()
+    public function show(BalanceRequest $request)
     {
-        return response()->json(['balance' => auth()->user()->balance]);
+        return new BalanceResource($request->user());
     }
 }

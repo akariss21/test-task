@@ -16,10 +16,10 @@ class OrderRequest extends FormRequest
         return [
             'customer_name' => 'required|string|max:255',
             'order_date' => 'required|date',
-            'status' => 'nullable|string|in:new,pending,completed,cancelled',
+            'status' => 'nullable|string|in:new,completed',
             'comment' => 'nullable|string',
             'products' => 'required|array|min:1',
-            'products.*.id' => 'required|exists:products,id',
+            'products.*.id' => 'required|integer|exists:products,id',
             'products.*.quantity' => 'required|integer|min:1',
         ];
     }

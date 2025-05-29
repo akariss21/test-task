@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Http\Requests\OrderRequest;
 use App\Http\Resources\OrderResource;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Order;
 
 class OrderController extends Controller
@@ -21,20 +22,26 @@ class OrderController extends Controller
 
         $order = Order::create([
             'customer_name' => $validated['customer_name'],
+            'user_id' => Auth::id(),
             'order_date' => $validated['order_date'],
-            'status' => $validated['status'] ?? 'pending',
+            'status' => $validated['status'] ?? 'new',
             'comment' => $validated['comment'] ?? null,
         ]);
 
-        foreach ($validated['products'] as $product) {
-            $order->products()->attach($product['id'], [
-                'quantity' => $product['quantity'],
+        foreach ($validated['products'] as $productData) {
+            $product = Product::find($productData['id']);
+            if (!$product) {
+                // Можно выбросить исключение или пропустить
+                return response()->json(['error' => "Product with id {$productData['id']} not found."], 422);
+            }
+            $order->products()->attach($product->id, [
+                'quantity' => $productData['quantity'],
             ]);
         }
 
         $order->load('products');
 
-        return new OrderResource($order);
+        return (new OrderResource($order))->response()->setStatusCode(201);
     }
 
     public function updateStatus($id)

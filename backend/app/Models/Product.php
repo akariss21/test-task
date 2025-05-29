@@ -11,6 +11,8 @@ class Product extends Model {
     protected $fillable = ['name',
         'category_id',
         'description',
+        'quantity',
+        'user_id',
         'price'
     ];
     public function category() {
@@ -21,5 +23,9 @@ class Product extends Model {
     }
     public function getDescription(){
         return $this->getAttribute('description');
+    }
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

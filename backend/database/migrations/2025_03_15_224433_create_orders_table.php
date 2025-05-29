@@ -17,8 +17,8 @@ return new class extends Migration
             $table->dateTime('order_date');
             $table->enum('status', ['new', 'completed'])->default('new');
             $table->text('comment')->nullable();
-            $table->foreignId('product_id')->constrained('products');
-            $table->integer('quantity');
+            // $table->foreignId('product_id')->constrained('products');
+            // $table->integer('quantity');
             $table->timestamps();
         });
     }

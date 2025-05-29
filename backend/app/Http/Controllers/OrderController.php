@@ -2,30 +2,53 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Order;
 use App\Models\Product;
-use Illuminate\Http\Request;
+use App\Http\Requests\OrderRequest;
+use App\Http\Resources\OrderResource;
+use App\Models\Order;
 
-class OrderController extends Controller {
-    public function index() {
-        $orders = Order::with('product')->get();
-        $orders->transform(function ($order) {
-            $order->total_price = $order->quantity * $order->product->price;
-            return $order;
-        });
-        return response()->json($orders);
+class OrderController extends Controller
+{
+    public function index()
+    {
+        $orders = Order::with('products')->get();
+        return OrderResource::collection($orders);
     }
-    public function list(Order $order) {
-        return response()->json($order->load('product'));
+
+    public function store(OrderRequest $request)
+    {
+        $validated = $request->validated();
+
+        $order = Order::create([
+            'customer_name' => $validated['customer_name'],
+            'order_date' => $validated['order_date'],
+            'status' => $validated['status'] ?? 'pending',
+            'comment' => $validated['comment'] ?? null,
+        ]);
+
+        foreach ($validated['products'] as $product) {
+            $order->products()->attach($product['id'], [
+                'quantity' => $product['quantity'],
+            ]);
+        }
+
+        $order->load('products');
+
+        return new OrderResource($order);
     }
-    public function store(Request $request)  {
-        $order = Order::create($request->all());
-        return response()->json($order, 201);
-    }
-    public function updateStatus($id) {
+
+    public function updateStatus($id)
+    {
         $order = Order::findOrFail($id);
         $order->status = 'completed';
         $order->save();
+
         return response()->json(['message' => 'Success']);
+    }
+
+    public function list(Order $order)
+    {
+        $order->load('products');
+        return new OrderResource($order);
     }
 }

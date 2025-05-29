@@ -17,12 +17,16 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware(['auth:api'])->group(function () {
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    
     Route::post('/user/become-seller', [UserController::class, 'becomeSeller']);
     Route::get('/user/role', [UserController::class, 'role']);
+
     Route::get('/balance', [BalanceController::class, 'show']); // показать текущий баланс
+
     Route::post('/transactions/deposit', [TransactionController::class, 'deposit']);       // пополнение баланса
     Route::post('/transactions/withdraw', [TransactionController::class, 'withdraw']);     // вывод средств
     Route::post('/transactions/purchase', [TransactionController::class, 'purchase']);     // покупка (списание с баланса)
+
     Route::get('products', [ProductController::class, 'index']);
     Route::post('products', [ProductController::class, 'store']);
     Route::get('products/{product}', [ProductController::class, 'list']);

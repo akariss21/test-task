@@ -15,13 +15,25 @@ class Order extends Model {
         'product_id',
         'quantity'
     ];
-    public function product() {
-        return $this->belongsTo(Product::class);
+    public function products() {
+        return $this->belongsToMany(Product::class, 'order_product')
+                    ->withPivot('quantity')
+                    ->withTimestamps();
     }
     public function getFormattedDate() {
         return $this->created_at->format('d.m.Y');
     }
     public function getStatus() {
         return $this->getAttribute('status');
+    }
+    public function getTotalPriceAttribute()
+    {
+        return $this->products->sum(function ($product) {
+            return $product->price * $product->pivot->quantity;
+        });
+    }
+    public function isCompleted()
+    {
+        return $this->status === 'completed';
     }
 }

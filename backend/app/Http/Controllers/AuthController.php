@@ -2,68 +2,38 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
+use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\LoginRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 
 class AuthController extends Controller
 {
-    private function generateJWT($user)
+    public function register(RegisterRequest $request)
     {
-        $payload = [
-            'iss' => 'laravel-jwt',          // Issuer
-            'sub' => $user->id,              // Subject (user ID)
-            'iat' => time(),                 // Issued at
-            'exp' => time() + 60 * 60        // Expiration time (1 hour)
-        ];
-
-        return JWT::encode($payload, env('JWT_SECRET'), 'HS256');
-    }
-
-    private function decodeJWT($token)
-    {
-        try {
-            return JWT::decode($token, new Key(env('JWT_SECRET'), 'HS256'));
-        } catch (\Exception $e) {
-            return null;
-        }
-    }
-
-    public function register(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:6',
-            'gender' => 'required|in:male,female'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'gender' => $request->gender
+            'gender' => $request->gender,
         ]);
+
         $token = JWTAuth::fromUser($user);
 
         return response()->json([
             'message' => 'User registered successfully',
-            'user' => $user,
+            'user' => new UserResource($user),
             'token' => $token
         ], 201);
     }
 
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
         $credentials = $request->only('email', 'password');
+
         try {
             if (!$token = JWTAuth::attempt($credentials)) {
                 return response()->json(['error' => 'Invalid credentials'], 401);
@@ -75,39 +45,19 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Login successful',
             'token' => $token,
-            'user' => auth()->user()
+            'user' => new UserResource(auth()->user())
         ]);
     }
 
-
-    public function profile(Request $request)
+    public function profile()
     {
-        $authHeader = $request->header('Authorization');
-
-        if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
-            return response()->json(['message' => 'Token not provided'], 401);
-        }
-
-        $token = substr($authHeader, 7);
-        $decoded = $this->decodeJWT($token);
-
-        if (!$decoded) {
-            return response()->json(['message' => 'Invalid or expired token'], 401);
-        }
-
-        $user = User::find($decoded->sub);
-
-        if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
-        }
-
         return response()->json([
             'success' => true,
-            'user' => $user
+            'user' => new UserResource(auth()->user())
         ]);
     }
 
-    public function logout(Request $request)
+    public function logout()
     {
         try {
             JWTAuth::invalidate(JWTAuth::getToken());

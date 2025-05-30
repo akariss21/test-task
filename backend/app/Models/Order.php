@@ -13,6 +13,7 @@ class Order extends Model {
         'status',
         'comment',
         'product_id',
+        'user_id',
         'quantity'
     ];
     public function products() {

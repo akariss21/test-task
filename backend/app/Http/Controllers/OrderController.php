@@ -10,12 +10,45 @@ use App\Models\Order;
 
 class OrderController extends Controller
 {
+    /**
+     * @OA\Get(
+     *     path="/orders",
+     *     summary="Get all orders",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of orders",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/OrderResource")
+     *         )
+     *     )
+     * )
+     */
     public function index()
     {
         $orders = Order::with('products')->get();
         return OrderResource::collection($orders);
     }
 
+    
+    /**
+     * @OA\Post(
+     *     path="/orders",
+     *     summary="Create a new order",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/OrderRequest")
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Order created",
+     *         @OA\JsonContent(ref="#/components/schemas/OrderResource")
+     *     ),
+     *     @OA\Response(response=422, description="Validation error or product not found")
+     * )
+     */
     public function store(OrderRequest $request)
     {
         $validated = $request->validated();
@@ -44,6 +77,22 @@ class OrderController extends Controller
         return (new OrderResource($order))->response()->setStatusCode(201);
     }
 
+    /**
+     * @OA\Patch(
+     *     path="/orders/{id}/complete",
+     *     summary="Mark order as completed",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Order ID",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(response=200, description="Order marked as completed"),
+     *     @OA\Response(response=404, description="Order not found")
+     * )
+     */
     public function updateStatus($id)
     {
         $order = Order::findOrFail($id);
@@ -53,6 +102,26 @@ class OrderController extends Controller
         return response()->json(['message' => 'Success']);
     }
 
+    /**
+     * @OA\Get(
+     *     path="/orders/{order}",
+     *     summary="Get order by ID",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="order",
+     *         in="path",
+     *         description="Order ID",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Order details",
+     *         @OA\JsonContent(ref="#/components/schemas/OrderResource")
+     *     ),
+     *     @OA\Response(response=404, description="Order not found")
+     * )
+     */
     public function list(Order $order)
     {
         $order->load('products');

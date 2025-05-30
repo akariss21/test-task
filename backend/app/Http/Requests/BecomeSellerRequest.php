@@ -4,6 +4,13 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+/**
+ * @OA\Schema(
+ *     schema="BecomeSellerRequest",
+ *     description="Request to switch to seller role. Request body is empty.",
+ *     type="object"
+ * )
+ */
 class BecomeSellerRequest extends FormRequest
 {
     public function authorize(): bool

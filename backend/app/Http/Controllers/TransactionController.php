@@ -11,6 +11,22 @@ use Illuminate\Support\Facades\DB;
 
 class TransactionController extends Controller
 {
+    /**
+     * @OA\Post(
+     *     path="/transactions/deposit",
+     *     summary="Deposit balance",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"amount"},
+     *             @OA\Property(property="amount", type="number", format="float", example=100.00)
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Balance deposited"),
+     *     @OA\Response(response=400, description="Error during deposit")
+     * )
+     */
     public function deposit(TransactionDepositRequest $request)
     {
         $user = auth()->user();
@@ -31,6 +47,22 @@ class TransactionController extends Controller
         ]);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/transactions/withdraw",
+     *     summary="Withdraw funds",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"amount"},
+     *             @OA\Property(property="amount", type="number", format="float", example=50.00)
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Withdrawal completed"),
+     *     @OA\Response(response=400, description="Insufficient funds")
+     * )
+     */
     public function withdraw(TransactionWithdrawRequest $request)
     {
         $user = auth()->user();
@@ -55,6 +87,19 @@ class TransactionController extends Controller
         ]);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/transactions/purchase",
+     *     summary="Purchase an order",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/TransactionPurchaseRequest")
+     *     ),
+     *     @OA\Response(response=200, description="Purchase completed successfully"),
+     *     @OA\Response(response=400, description="Insufficient funds or order already completed")
+     * )
+     */
     public function purchase(TransactionPurchaseRequest $request)
     {
         $user = auth()->user();

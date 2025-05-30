@@ -33,27 +33,27 @@ services:
       - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
-  web:
-    build: ./web
-    depends_on:
-      - "backend"
-    environment:
-      WEBSOCKET_HOST: ${WEBSOCKET_HOST}
-      WEBSOCKET_PORT: ${WEBSOCKET_PORT}
-      WEBSOCKET_PROTOCOL: ${WEBSOCKET_PROTOCOL}
-      WOPI_ENABLED: ${WOPI_ENABLED}
-      LDAP_ENABLED: ${LDAP_IS_ENABLED}
-      WOPI_CLIENT_URL: ${WOPI_CLIENT_URL}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID}
-      APPLE_CLIENT_ID: ${APPLE_CLIENT_ID}
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8099:8099"
-    volumes:
-      - /etc/security:/etc/security
-      - /etc/letsencrypt:/etc/letsencrypt
-    restart: always
+  # web:
+  #   build: ./web
+  #   depends_on:
+  #     - "backend"
+  #   environment:
+  #     WEBSOCKET_HOST: ${WEBSOCKET_HOST}
+  #     WEBSOCKET_PORT: ${WEBSOCKET_PORT}
+  #     WEBSOCKET_PROTOCOL: ${WEBSOCKET_PROTOCOL}
+  #     WOPI_ENABLED: ${WOPI_ENABLED}
+  #     LDAP_ENABLED: ${LDAP_IS_ENABLED}
+  #     WOPI_CLIENT_URL: ${WOPI_CLIENT_URL}
+  #     GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+  #     FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID}
+  #     APPLE_CLIENT_ID: ${APPLE_CLIENT_ID}
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #     - "8099:8099"
+  #   volumes:
+  #     - /etc/security:/etc/security
+  #     - /etc/letsencrypt:/etc/letsencrypt
+  #   restart: always
 volumes:
   db_data:

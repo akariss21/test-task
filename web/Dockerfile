@@ -1,19 +1,17 @@
-FROM node:16-alpine3.14 AS build-stage
+# Этап сборки Vue
+FROM node:18-alpine AS build-stage
+
 WORKDIR /app
-ENV NODE_OPTIONS="--max-old-space-size=8192"
-COPY web .
-RUN npm install --force
-RUN npm rebuild esbuild
+COPY package*.json ./
+RUN npm install
+COPY . .
 RUN npm run build
 
-WORKDIR /app
-FROM nginx:stable-alpine as production-stage
+# Этап продакшен nginx
+FROM nginx:stable-alpine AS production-stage
+
 COPY --from=build-stage /app/dist /usr/share/nginx/html
-COPY ./web/src/config/nginx.conf /etc/nginx/nginx.conf
-COPY ./web/src/config/haproxy.cfg /etc/haproxy.cfg
-RUN apk add  haproxy
-# env
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
-EXPOSE 443
 CMD ["nginx", "-g", "daemon off;"]

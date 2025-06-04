@@ -8,10 +8,13 @@ const api = axios.create({
   }
 });
 
-// Добавляем токен при наличии
-const token = localStorage.getItem('token');
-if (token) {
-  api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-}
+// Добавляем токен из localStorage при каждом запросе (если есть)
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 export default api;

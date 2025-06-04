@@ -1,38 +1,42 @@
 <script setup>
-import Login from './pages/Login.vue'
+import { ref, onMounted, computed } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+
+const router = useRouter();
+const route = useRoute();
+const isAuthenticated = ref(false);
+
+onMounted(() => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    isAuthenticated.value = true;
+    if (route.path === '/') {
+      router.push('/'); // или /dashboard
+    }
+  }
+});
+
+// реактивный путь (для шаблона)
+const currentPath = computed(() => route.path);
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
-    <h1>Вход в систему</h1>
-  </header>
-  <router-view />
-  <main>
-    <Login />
-  </main>
+  <div>
+  <!-- Отображаем все остальное (логин, регистрация, dashboard, home) -->
+    <router-view />
+  </div>
 </template>
-
-<script>
-export default {
-  name: 'App'
-}
-</script>
 
 <style scoped>
 header {
   text-align: center;
-  line-height: 1.5;
-  margin-bottom: 2rem;
+  margin-top: 3rem;
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 1rem;
-}
-
-main {
-  display: flex;
-  justify-content: center;
+button {
+  margin: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 16px;
+  cursor: pointer;
 }
 </style>

@@ -35,7 +35,7 @@ const login = async () => {
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     
     // Можно перенаправить пользователя, например:
-    router.push('/');
+    router.push('/profile');
   } catch (e) {
     error.value = e.response?.data?.message || 'Ошибка входа';
     console.error('Login failed:', e.response?.data);

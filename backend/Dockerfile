@@ -8,22 +8,19 @@ RUN apt-get update && apt-get install -y \
     libevent-dev \
     zlib1g-dev \
     libicu-dev \
-    && pecl install raphf-2.0.1 \
-    && docker-php-ext-enable raphf \
-    && pecl install pecl_http-4.2.0 \
-    && echo "extension=http.so" > /usr/local/etc/php/conf.d/http.ini \
     && docker-php-ext-install pdo pdo_mysql intl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Установка Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-RUN mkdir /var/run/php-fpm
-RUN chmod 777 /var/run/php-fpm
-RUN chown -R www-data:www-data /var/www
+RUN mkdir /var/run/php-fpm && \
+    chmod 777 /var/run/php-fpm && \
+    chown -R www-data:www-data /var/www
 
 EXPOSE 8000
 
 COPY . /var/www/html
 WORKDIR /var/www/html
-CMD ["sh", "-c", "composer install && php artisan optimize && php artisan migrate:fresh --seed && php artisan serve --host=0.0.0.0 --port=8000"]
 
+CMD ["sh", "-c", "composer install && php artisan optimize && php artisan migrate:fresh --seed && php artisan serve --host=0.0.0.0 --port=8000"]

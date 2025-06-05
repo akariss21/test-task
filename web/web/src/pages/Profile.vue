@@ -7,12 +7,32 @@
     <p><strong>Пол:</strong> {{ user.gender }}</p>
     <p><strong>Баланс:</strong> {{ user.balance }}</p>
     <p><strong>Дата регистрации:</strong> {{ user.created_at }}</p>
+    <p><strong>Роль:</strong> {{ user.role }}</p>
 
+    <!-- Кнопки -->
+    <button v-if="user.role === 'customer'" @click="becomeSeller">Станьте продавцом!</button>
+    <button @click="router.push('/orders/create')">Оформить заказ</button>
+    <button v-if="user.role === 'seller'" @click="router.push('/products/create')">Создать товар</button>
+    <button v-if="user.role === 'seller'" @click="router.push('/product')">Все товары</button>
+    <button @click="router.push('/orders')">Все заказы</button>
+    <button @click="showDeposit = true">Пополнить баланс</button>
+    <button @click="showWithdraw = true">Вывести деньги</button>
+
+    <!-- Кнопка выхода -->
     <button @click="logout">Выйти</button>
   </div>
 
+  <!-- Модальные формы -->
+  <div v-if="showDeposit">
+    <input type="number" v-model="depositAmount" placeholder="Сумма пополнения" />
+    <button @click="deposit">Пополнить</button>
+  </div>
+
+  <div v-if="showWithdraw">
+    <input type="number" v-model="withdrawAmount" placeholder="Сумма вывода" />
+    <button @click="withdraw">Вывести</button>
+  </div>
   <p v-else-if="error" style="color: red;">{{ error }}</p>
-  <p v-else>Загрузка...</p>
 </template>
 
 <script setup>
@@ -24,21 +44,58 @@ const user = ref(null);
 const error = ref('');
 const router = useRouter();
 
-onMounted(async () => {
+const fetchProfile = async () => {
   try {
     const res = await api.get('/profile');
-    console.log('Ответ от /profile:', res.data);
-    user.value = res.data.user;  // <- вот тут ключ user
+    user.value = res.data.user;
   } catch (err) {
     console.error('Ошибка загрузки профиля:', err);
     error.value = 'Не удалось загрузить профиль';
   }
-});
+};
+
+onMounted(fetchProfile);
 
 const logout = () => {
   localStorage.removeItem('token');
   delete api.defaults.headers.common['Authorization'];
   router.push('/login');
+};
+
+const showDeposit = ref(false);
+const showWithdraw = ref(false);
+const depositAmount = ref(0);
+const withdrawAmount = ref(0);
+
+const deposit = async () => {
+  try {
+    const res = await api.post('/transactions/deposit', { amount: depositAmount.value });
+    alert(res.data.message);
+    location.reload();
+  } catch (err) {
+    alert('Ошибка при пополнении');
+  }
+};
+
+const withdraw = async () => {
+  try {
+    const res = await api.post('/transactions/withdraw', { amount: withdrawAmount.value });
+    alert(res.data.message);
+    location.reload();
+  } catch (err) {
+    alert(err.response?.data?.message || 'Ошибка при выводе');
+  }
+};
+
+const becomeSeller = async () => {
+  try {
+    const res = await api.post('/user/become-seller');
+    alert(res.data.message);
+    fetchProfile(); // Обновить профиль после смены роли
+  } catch (err) {
+    console.error('Ошибка при попытке стать продавцом:', err);
+    alert('Не удалось изменить роль.');
+  }
 };
 </script>
 
